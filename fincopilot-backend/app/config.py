@@ -1,0 +1,62 @@
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
+
+# Resolve .env relative to this file so it works regardless of CWD
+_ENV_FILE = Path(__file__).parent.parent / ".env"
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=str(_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
+
+    # App
+    environment: str = "development"
+    secret_key: str = "change-me-in-production"
+    access_token_expire_minutes: int = 10080  # 7 days
+    refresh_token_expire_days: int = 7
+    algorithm: str = "HS256"
+
+    # Database (local default uses SQLite; set DATABASE_URL env var in production)
+    database_url: str = "sqlite+aiosqlite:///./fincopilot.db"
+
+    # CORS — comma-separated allowed origins
+    allowed_origins: str = "http://localhost:3000"
+
+    # Redis / Celery
+    redis_url: str = "redis://localhost:6379/0"
+
+    # AWS S3
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-east-1"
+    s3_bucket: str = "fincopilot-uploads"
+
+    # Email — SMTP (Gmail / any provider) takes priority over Resend
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+
+    # Email — Resend API (resend.com free tier, fallback when SMTP not set)
+    resend_api_key: str = ""
+    email_from: str = ""
+
+    # Resend sandbox: when set, all emails are delivered here instead of the
+    # real recipient (useful on HF Spaces where no domain is verified yet)
+    resend_test_email: str = ""
+
+    # AI
+    anthropic_api_key: str = ""
+    openai_api_key: str = ""
+
+    # Model paths
+    model_dir: str = "models"
+
+    # Categorizer thresholds
+    min_confidence_threshold: float = 0.65
+    min_training_samples: int = 50
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
